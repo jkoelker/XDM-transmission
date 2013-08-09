@@ -107,9 +107,7 @@ class Transmission(plugins.Downloader):
         if response:
             return (True, {}, 'Connetion Established!')
 
-        else:
-            return (False, {},
-                    'Unknown response from Transmisstion')
+        return (False, {}, 'Unknown response from Transmisstion')
 
     _test.args = ['host', 'port', 'username', 'password']
 
