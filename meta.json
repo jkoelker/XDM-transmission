@@ -1,0 +1,17 @@
+{
+    "name": "XDM-transmission",
+    "info_url": "https://github.com/jkoelker/XDM-transmission",
+    "plugins": {
+        "net.koelker.jason.xdm.transmission": [
+            {
+                "major_version": 0,
+                "minor_version": 1,
+                "format": "zip",
+                "desc": "Transmission Downloader.",
+                "name": "Transmission",
+                "type": "Downloader",
+                "download_url": "https://github.com/jkoelker/XDM-transmission/archive/master.zip"
+            }
+        ]
+    }
+}
