@@ -93,7 +93,7 @@ class Transmission(plugins.Downloader):
             return (False, {},
                     'Connetion failure: Timeout. Check host and port.')
 
-        except shifter.utllib2.URLError as e:
+        except shifter.urllib2.URLError as e:
             msg = 'Connetion failure: %s. Check host and port.'
             return (False, {}, msg % e.reason)
 
