@@ -87,7 +87,7 @@ class Transmission(plugins.Downloader):
         try:
             client = shifter.Client(address=url, username=username,
                                     password=password, timeout=10)
-            response = client.get()
+            response = client.session.get()
 
         except shifter.urllib2.socket.timeout:
             return (False, {},
