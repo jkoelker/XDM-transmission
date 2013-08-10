@@ -556,6 +556,9 @@ class TorrentMethods(NS):
         # normalize keys
         result = [[normalize(t) for t in l] for l in result]
 
+        if not result[0]:
+            return {}
+
         # assuming all torrents have the same keys
         # (allows hoisting the if statement)
         first_obj = result[0][0]
