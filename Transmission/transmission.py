@@ -25,28 +25,50 @@ from .lib import shifter
 
 
 class Transmission(plugins.Downloader):
-    version = '0.1'
+    version = '0.2'
     identifier = 'net.koelker.jason.xdm.transmission'
     _config = {'port': 9091,
                'host': 'http://localhost',
                'username': '',
                'password': '',
+               'download_path': '',
+               'category_folders': True,
                }
-    _history = []
-    _queue = []
     types = ['de.lad1337.torrent']
 
     def addDownload(self, download):
-        """Add/download a Download to this downloader
+        client = self._client()
+        cat = self._getCategory(download.element)
 
-        Arguments:
-        download -- an Download object
+        kwargs = {}
+        if self.c.download_path:
+            path = self.c.download_path
 
-        return:
-        bool if the adding was successful
-        >>>> False
-        """
-        return False
+            if self.c.category_folders and cat is not None:
+                path = '%s/%s' % (path, cat)
+
+            kwargs['download-dir'] = path
+
+        try:
+            r = client.torrent.add(filename=download.url, **kwargs)
+        except:
+            msg = ('Unable to connect to Transmission. Most likely a timout.'
+                   'Is Transmission running?')
+            plugins.log.error(msg)
+            return False
+
+        if not r:
+            msg = ('Unable to add torrent to Transmission. Is it a dupe?')
+            plugins.log.error(msg)
+            return False
+
+        plugins.log('Transmission ID: %s' % r['id'])
+        plugins.log('Transmission Name: %s' % r['name'])
+        plugins.log('Transmission Hash: %s' % r['hash_string'])
+        plugins.log.info('Torrent added to Transmission')
+
+        download.external_id = r['id']
+        return True
 
     def getElementStaus(self, element):
         """Get the staus of element that it has in this downloader
@@ -58,35 +80,54 @@ class Transmission(plugins.Downloader):
         tuple of Status, Download and a path (str)
         >>>> (common.UNKNOWN, Download(), '')
         """
+        download = plugins.Download()
+        download.status = plugins.common.UNKNOWN
+        if not hasattr(element, 'downloads'):
+            return (plugins.common.UNKNOWN, download, '')
+
         return (plugins.common.UNKNOWN, plugins.Download(), '')
+
+    def getDownloadPercentage(self, element):
+        """"this should return a int betwen 0 and 100 as the percentage"""
+        return 0
+
+    def _client(self, username=None, password=None, host=None, port=0,
+                **kwargs):
+        # TODO(jkoelker) cache the client (possibly port to requests)
+        url = self._url(host, port)
+
+        if username is None:
+            username = self.c.username
+
+        if password is None:
+            password = self.c.password
+
+        return shifter.Client(address=url, username=username,
+                              password=password, **kwargs)
 
     def _url(self, host=None, port=0):
         if not host:
             host = self.c.host
 
             if not host.startswith('http'):
-                plugins.log("Fixing url. Adding http://")
-                self.c.host = "http://%s" % host
+                plugins.log('Fixing url. Adding http://')
+                self.c.host = 'http://%s' % host
 
             host = self.c.host
 
         else:
             if not host.startswith('http'):
-                host = "http://%s" % host
+                host = 'http://%s' % host
 
         if not port:
             port = self.c.port
 
-        return "%s:%s/transmission/rpc" % (host, port)
+        return '%s:%s/transmission/rpc' % (host, port)
 
     def _test(self, host, port, username, password):
-        if not username:
-            username = None
-
         url = self._url(host, port)
         try:
-            client = shifter.Client(address=url, username=username,
-                                    password=password, timeout=10)
+            client = self._client(username, password, host, port, timeout=10)
             response = client.session.get()
 
         except shifter.urllib2.socket.timeout:
@@ -101,7 +142,7 @@ class Transmission(plugins.Downloader):
             msg = 'Connetion failure: %s. Check username and password.'
             return (False, {}, msg % e.message)
 
-        plugins.log("Transmission test url %s" % url,
+        plugins.log('Transmission test url %s' % url,
                     censor={self.c.password: 'password'})
 
         if response:
